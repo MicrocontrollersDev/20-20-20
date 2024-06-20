@@ -2,8 +2,8 @@ package club.sk1er.mods.eye;
 
 import java.awt.Color;
 
-import gg.essential.api.EssentialAPI;
-import gg.essential.api.utils.Multithreading;
+import cc.polyfrost.oneconfig.libs.universal.UChat;
+import cc.polyfrost.oneconfig.utils.Multithreading;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.audio.PositionedSoundRecord;
 import net.minecraft.client.audio.SoundHandler;
@@ -11,30 +11,28 @@ import net.minecraft.client.entity.EntityPlayerSP;
 import net.minecraft.client.gui.Gui;
 import net.minecraft.client.gui.ScaledResolution;
 import net.minecraft.client.renderer.GlStateManager;
-import net.minecraft.client.settings.KeyBinding;
 import net.minecraft.util.EnumChatFormatting;
 import net.minecraft.util.MathHelper;
 import net.minecraft.util.ResourceLocation;
-import net.minecraftforge.client.ClientCommandHandler;
 import net.minecraftforge.client.event.RenderGameOverlayEvent;
 import net.minecraftforge.common.MinecraftForge;
-import net.minecraftforge.fml.client.registry.ClientRegistry;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.common.Mod.Instance;
-import net.minecraftforge.fml.common.event.FMLPreInitializationEvent;
+import net.minecraftforge.fml.common.event.FMLInitializationEvent;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import net.minecraftforge.fml.common.gameevent.TickEvent;
-import net.minecraftforge.fml.common.gameevent.TickEvent.ClientTickEvent;
-import org.lwjgl.input.Keyboard;
 import org.lwjgl.opengl.GL11;
 
-@Mod(modid = TwentyTwentyTwentyMod.MODID, name = "20 20 20", version = TwentyTwentyTwentyMod.VERSION)
+@Mod(modid = TwentyTwentyTwentyMod.MODID, name = TwentyTwentyTwentyMod.NAME, version = TwentyTwentyTwentyMod.VERSION)
 public class TwentyTwentyTwentyMod {
 
-    public static final String MODID = "20_20_20";
-    public static final String VERSION = "1.4";
+    public static final String MODID = "@ID@";
+    public static final String NAME = "@NAME@";
+    public static final String VERSION = "@VER@";
     private final ResourceLocation textureLoc = new ResourceLocation("20_20_20", "break.png");
-    private final KeyBinding keyBinding = new KeyBinding("Start Break", Keyboard.KEY_J, "20 20 20");
+    @Mod.Instance(MODID)
+    public static TwentyTwentyTwentyMod INSTANCE; // Adds the instance of the mod, so we can access other variables.
+    public static TwentyConfig config;
 
     private int breakTicks;
     private int ticks;
@@ -43,37 +41,33 @@ public class TwentyTwentyTwentyMod {
     private int warnedTicks;
 
     private boolean shouldPing;
-    private Config config;
 
     @Instance(MODID)
     public static TwentyTwentyTwentyMod instance;
 
-    public Config getConfig() {
+    public TwentyConfig getConfig() {
         return config;
     }
 
     @Mod.EventHandler
-    public void init(FMLPreInitializationEvent event) {
-        config = new Config();
-        config.preload();
+    public void onInit(FMLInitializationEvent event) {
+        config = new TwentyConfig();
         MinecraftForge.EVENT_BUS.register(this);
-        ClientRegistry.registerKeyBinding(keyBinding);
-        ClientCommandHandler.instance.registerCommand(new Command20Config());
     }
 
     @SubscribeEvent
     public void tick(TickEvent.ClientTickEvent event) {
         EntityPlayerSP thePlayer = Minecraft.getMinecraft().thePlayer;
-        if (!this.config.isEnabled() || event.phase != TickEvent.Phase.START || thePlayer == null) {
+        if (!TwentyTwentyTwentyMod.config.enabled || event.phase != TickEvent.Phase.START || thePlayer == null) {
             return;
         }
 
-        timeForBreak = ++ticks >= config.getInterval() * 20 * 60;
+        timeForBreak = ++ticks >= TwentyConfig.interval * 20 * 60;
         if (timeForBreak) {
-            if (warnedTicks % (20 * 30) == 0 && config.isChat()) {
-                EssentialAPI.getMinecraftUtil().sendMessage(EnumChatFormatting.GOLD + "[20 20 20] ",
-                        "Time to take a break. Press " + Keyboard.getKeyName(keyBinding.getKeyCode()) + " to start. ");
-                if (config.isPingWhenReady()) {
+            if (warnedTicks % (20 * 30) == 0 && TwentyConfig.chat) {
+                UChat.chat(EnumChatFormatting.GOLD + "[20 20 20] " + EnumChatFormatting.WHITE +
+                        "Time to take a break. Press " + TwentyConfig.startBreakKeybind.getDisplay() + " to start.");
+                if (TwentyConfig.pingWhenReady) {
                     ping();
                 }
             }
@@ -81,7 +75,7 @@ public class TwentyTwentyTwentyMod {
             warnedTicks++;
         }
 
-        if (keyBinding.isPressed()) {
+        if (TwentyConfig.startBreakKeybind.isActive()) {
             if (breaking) {
                 breaking = false;
             } else {
@@ -95,10 +89,10 @@ public class TwentyTwentyTwentyMod {
         if (breaking) {
             timeForBreak = false;
             breakTicks++;
-            if (breakTicks > config.getDuration() * 20) {
+            if (breakTicks > TwentyConfig.duration * 20) {
                 breaking = false;
 
-                if (config.isPingWhenDone()) {
+                if (TwentyConfig.pingWhenDone) {
                     ping();
                 }
             }
@@ -136,14 +130,14 @@ public class TwentyTwentyTwentyMod {
 
     @SubscribeEvent
     public void renderTickEvent(RenderGameOverlayEvent.Post event) {
-        if (!config.isEnabled() || !(event.type.equals(RenderGameOverlayEvent.ElementType.ALL))) {
+        if (!TwentyTwentyTwentyMod.config.enabled || !(event.type.equals(RenderGameOverlayEvent.ElementType.ALL))) {
             return;
         }
 
         if (timeForBreak) {
             GlStateManager.pushMatrix();
             ScaledResolution scaledResolution = new ScaledResolution(Minecraft.getMinecraft());
-            int corner = config.getCorner();
+            int corner = TwentyConfig.corner;
             double width = 64;
             double height = 64;
 
@@ -187,7 +181,7 @@ public class TwentyTwentyTwentyMod {
             Gui.drawScaledCustomSizeModalRect(0, 0, 0, 0, 128, 128, 16, 16, 128, 128);
             GlStateManager.popMatrix();
         } else if (breaking) {
-            int totalTime = 20 * config.getDuration();
+            int totalTime = 20 * TwentyConfig.duration;
             double percent = (double) breakTicks / (double) totalTime;
             ScaledResolution current = new ScaledResolution(Minecraft.getMinecraft());
             float radius = current.getScaledHeight() * 2F / 5F;
@@ -223,14 +217,14 @@ public class TwentyTwentyTwentyMod {
             GL11.glDisable(GL11.GL_LINE_SMOOTH);
             GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
 
-            drawScaledText(String.valueOf((config.getDuration() * 20 - breakTicks) / 20),
+            drawScaledText(String.valueOf((TwentyConfig.duration * 20 - breakTicks) / 20),
                     centerX,
                     centerY - 10,
                     2.0,
                     Color.YELLOW.getRGB()
             );
 
-            drawScaledText("Press " + Keyboard.getKeyName(keyBinding.getKeyCode()) + " to cancel. ",
+            drawScaledText("Press " + TwentyConfig.startBreakKeybind.getDisplay() + " to cancel. ",
                     current.getScaledWidth() / 2,
                     5,
                     2,
