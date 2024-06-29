@@ -1,0 +1,7 @@
+{
+  "refmap": "mixins.20_20_20.refmap.json",
+  "minVersion": "0.7",
+  "compatibilityLevel": "JAVA_8",
+  "client": [
+  ]
+}

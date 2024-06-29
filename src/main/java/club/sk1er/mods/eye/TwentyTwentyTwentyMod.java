@@ -42,6 +42,8 @@ public class TwentyTwentyTwentyMod {
 
     private boolean shouldPing;
 
+    private boolean wasKeyDown = false;
+
     @Instance(MODID)
     public static TwentyTwentyTwentyMod instance;
 
@@ -76,14 +78,19 @@ public class TwentyTwentyTwentyMod {
         }
 
         if (TwentyConfig.startBreakKeybind.isActive()) {
-            if (breaking) {
-                breaking = false;
-            } else {
-                ticks = 0;
-                breaking = true;
-                breakTicks = 0;
-                warnedTicks = 0;
+            if (!wasKeyDown) {
+                wasKeyDown = true;
+                if (breaking) {
+                    breaking = false;
+                } else {
+                    ticks = 0;
+                    breaking = true;
+                    breakTicks = 0;
+                    warnedTicks = 0;
+                }
             }
+        } else {
+            wasKeyDown = false;
         }
 
         if (breaking) {
@@ -137,7 +144,7 @@ public class TwentyTwentyTwentyMod {
         if (timeForBreak) {
             GlStateManager.pushMatrix();
             ScaledResolution scaledResolution = new ScaledResolution(Minecraft.getMinecraft());
-            int corner = TwentyConfig.corner;
+            int corner = TwentyConfig.corner + 1;
             double width = 64;
             double height = 64;
 
@@ -158,20 +165,20 @@ public class TwentyTwentyTwentyMod {
             //No translation needed for corner 1
             switch (corner) {
                 case 2:  //Top right
-                    GlStateManager.translate(scaledResolution.getScaledWidth() - width / scaledResolution.getScaleFactor(),
+                    GlStateManager.translate(scaledResolution.getScaledWidth() - 1.5 * width / scaledResolution.getScaleFactor(),
                             0,
                             0);
                     break;
 
                 case 3:  //bottom left
                     GlStateManager.translate(0,
-                            scaledResolution.getScaledHeight() - height / scaledResolution.getScaleFactor(),
+                            scaledResolution.getScaledHeight() - 1.5 * height / scaledResolution.getScaleFactor(),
                             0);
                     break;
 
                 case 4:  //bottom right
-                    GlStateManager.translate(scaledResolution.getScaledWidth() - width / scaledResolution.getScaleFactor(),
-                            scaledResolution.getScaledHeight() - height / scaledResolution.getScaleFactor(),
+                    GlStateManager.translate(scaledResolution.getScaledWidth() - 1.5 * width / scaledResolution.getScaleFactor(),
+                            scaledResolution.getScaledHeight() - 1.5 * height / scaledResolution.getScaleFactor(),
                             0);
                     break;
             }
@@ -204,7 +211,7 @@ public class TwentyTwentyTwentyMod {
 
             int i = 150;
             for (float j = 0; j <= i; j++) {
-                Color tmp = new Color(97, 132, 249, percent > j / (float) i ? 50 : 255);
+                Color tmp = new Color(TwentyConfig.color.getRed(), TwentyConfig.color.getGreen(), TwentyConfig.color.getBlue(), percent > j / (float) i ? 50 : 255);
                 GlStateManager.color(tmp.getRed() / 255F, tmp.getGreen() / 255F, tmp.getBlue() / 255F, tmp.getAlpha() / 255F);
                 float x = centerX + radius * MathHelper.sin(startTheta + (diff * j / ((float) i)));
                 float y = centerY + radius * MathHelper.cos(startTheta + (diff * j / ((float) i)));
